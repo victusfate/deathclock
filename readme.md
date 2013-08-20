@@ -5,10 +5,11 @@ Death Clock - "Sewn backtogether wrong"
 Monitoring thread that commits sepuko after a predetermined time unless it's successfully completes.
 
 # note, need to build libuv first
-  $ sh autogen.sh
-  $ ./configure
-  $ make
-  $ make check
-  $ make install
+
+    $ sh autogen.sh
+    $ ./configure
+    $ make
+    $ make check
+    $ make install
 
 
