@@ -3,7 +3,7 @@
 CFLAGS 	+= -D__STDC_CONSTANT_MACROS
 
 
-UV_PATH=$(shell pwd)/../libuv
+UV_PATH=$(shell pwd)/./libuv
 UV_LIB=$(UV_PATH)/libuv.a
 CFLAGS=-g -Wall -I$(UV_PATH)/include
 LIBS=
@@ -21,7 +21,7 @@ endif
 all: $(UV_LIB) gcc $(CFLAGS) -o sample sample/sample.cc $(UV_LIB) $(LIBS)
 
 $(UV_LIB):
-	make -C ../libuv
+	make -C ./libuv
 
 
 
