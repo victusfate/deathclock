@@ -1,9 +1,16 @@
 #include "DeathClock.h"
 
+#define BEGIN_ASYNC(_data, async, after) \
+uv_work_t *_req = new uv_work_t; \
+_req->data = _data; \
+uv_queue_work(uv_default_loop(), _req, async, (uv_after_work_cb)after);
+typedef void async_rtn;
+#define RETURN_ASYNC
+#define RETURN_ASYNC_AFTER delete req;
+
+
 async_rtn asyncDeathClock(uv_work_t *req)
 {
-    RunTime t1;
-
     DeathClockData *m = (DeathClockData *)req->data;
 
     while (m->m_ContinueCountDown) {

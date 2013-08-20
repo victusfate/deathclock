@@ -3,6 +3,14 @@
 
 #include <iostream>
 #include <fstream>
+#include <string>
+#include <sstream>
+#include <assert.h>
+
+#include <uv.h>
+
+using namespace std;
+
 
 #define BEGIN_ASYNC(_data, async, after) \
     uv_work_t *_req = new uv_work_t; \

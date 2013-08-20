@@ -1,4 +1,4 @@
-#include "DeathClock.h"
+#include "src/DeathClock.h"
 
 int main(int argc, char *argv[]) 
 {
