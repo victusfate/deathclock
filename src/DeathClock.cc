@@ -9,15 +9,22 @@ typedef void async_rtn;
 #define RETURN_ASYNC_AFTER delete req;
 
 
+extern uv_mutex_t DEATH_CLOCK_IO_MUTEX;
+
 async_rtn asyncDeathClock(uv_work_t *req)
 {
     DeathClockData *m = (DeathClockData *)req->data;
 
     while (m->m_ContinueCountDown) {
-        // cout << "checking for " << m->m_sErrorMessage << " counter " << m->m_Counter << " max allowed " << m->m_NMaxChecks << " continue count down " << m->m_ContinueCountDown << " pointer " << (void *)m->m_ContinueCountDown << endl;
+        uv_mutex_lock(&DEATH_CLOCK_IO_MUTEX); 
+        cout << "checking for " << m->m_sErrorMessage << " counter " << m->m_Counter << " max allowed " << m->m_NMaxChecks << " continue count down " << m->m_ContinueCountDown << " pointer " << (void *)m->m_ContinueCountDown << endl;
+        uv_mutex_unlock(&DEATH_CLOCK_IO_MUTEX); 
+        
         if (m->m_Counter >= m->m_NMaxChecks) {
             m->m_ContinueCountDown = 0;
-
+            
+            uv_mutex_lock(&DEATH_CLOCK_IO_MUTEX);
+        
             stringstream err;
             err << " ERROR DeathClock::DeathClock end of universe reached, ---<<<*** EXPLOSIONS ***>>>--- message: " << m->m_sErrorMessage;
             cout << err.str() << endl;        
@@ -32,6 +39,7 @@ async_rtn asyncDeathClock(uv_work_t *req)
                 const char *eString = cleanUp.str().c_str();
                 system(eString);
             }
+            uv_mutex_unlock(&DEATH_CLOCK_IO_MUTEX);
 
             usleep(1000); // sleep for a 1ms, then die
             assert(false); // kill switch, would like a cleaner one to interrupt the main loop and return error state
