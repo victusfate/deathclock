@@ -10,39 +10,36 @@ typedef void async_rtn;
 
 
 extern uv_mutex_t DEATH_CLOCK_IO_MUTEX;
+unordered_map<unsigned int,int> DEATH_CLOCK_MAP;
+unsigned long DEATH_CLOCK_ID = 0;
 
 async_rtn asyncDeathClock(uv_work_t *req)
 {
     DeathClockData *m = (DeathClockData *)req->data;
 
-    while (m->m_ContinueCountDown) {
+    unordered_map<unsigned int, int>::const_iterator pContinueCountDown = DEATH_CLOCK_MAP.find(m->m_clockID);
+    if (pContinueCountDown == DEATH_CLOCK_MAP.end()) {
+        cout << "error finding id " << m->m_clockID << " in map exiting ";
+        exit(1);
+    }
+    int continueCountDown = pContinueCountDown->second;
+
+
+    while (continueCountDown) {
         uv_mutex_lock(&DEATH_CLOCK_IO_MUTEX); 
-        cout << "checking for " << m->m_sErrorMessage << " counter " << m->m_Counter << " max allowed " << m->m_NMaxChecks << " continue count down " << m->m_ContinueCountDown << " pointer " << (void *)m->m_ContinueCountDown << endl;
+        cout << "checking for " << m->m_sErrorMessage << " counter " << m->m_Counter << " max allowed " << m->m_NMaxChecks << endl;
         uv_mutex_unlock(&DEATH_CLOCK_IO_MUTEX); 
         
-        if (m->m_Counter >= m->m_NMaxChecks) {
-            m->m_ContinueCountDown = 0;
+        if (m->m_Counter >= m->m_NMaxChecks) {           
+            uv_mutex_lock(&DEATH_CLOCK_IO_MUTEX);        
+            DEATH_CLOCK_MAP[m->m_clockID] = 0;
             
-            uv_mutex_lock(&DEATH_CLOCK_IO_MUTEX);
-        
             stringstream err;
             err << " ERROR DeathClock::DeathClock end of universe reached, ---<<<*** EXPLOSIONS ***>>>--- message: " << m->m_sErrorMessage;
             cout << err.str() << endl;        
-
-            // safe guard your path cleanup area
-            std::size_t found = m->m_sPathToClean.find("/tmp/");
-
-            if (found != string::npos) {
-                cout << "ABOUT TO KILL JOB IN asyncDeathClock, this path is going bye bye " << m->m_sPathToClean << endl;
-                stringstream cleanUp;
-                cleanUp << "sudo rm -rf " << m->m_sPathToClean << " &";
-                const char *eString = cleanUp.str().c_str();
-                system(eString);
-            }
             uv_mutex_unlock(&DEATH_CLOCK_IO_MUTEX);
 
-            usleep(1000); // sleep for a 1ms, then die
-            assert(false); // kill switch, would like a cleaner one to interrupt the main loop and return error state
+            assert(false); // create abort, main loop won't receive any messages if it's frozen
         }
         m->m_Counter++;
         usleep(m->m_uSecSleep); // usleep for x useconds
@@ -59,29 +56,34 @@ async_rtn afterDeathClock(uv_work_t *req)
     RETURN_ASYNC_AFTER
 }
 
-void asyncDeathClock(double TimeOutFailureSeconds, const string &sErrorMessage, int uSecSleep, int &ContinueCountDown, const string &sPathToClean)
+void asyncDeathClock(double TimeOutFailureSeconds, const string &sErrorMessage, unsigned int clockID, int uSecSleep)
 {
-    // cout << "asyncDeathClock setup: message " << sErrorMessage << " asyncDeathClock pointer to continue count down " << (void *)&ContinueCountDown << endl;
-    DeathClockData *pm = new DeathClockData(ContinueCountDown);
+    DeathClockData *pm = new DeathClockData;
     pm->m_Counter = 0;
     pm->m_uSecSleep = uSecSleep;
     pm->m_NMaxChecks = TimeOutFailureSeconds / ((double)uSecSleep * 1e-6);
     pm->m_sErrorMessage = sErrorMessage.c_str();
-    pm->m_sPathToClean = sPathToClean.c_str();
+    pm->m_clockID = clockID;
 
     BEGIN_ASYNC(pm, asyncDeathClock, afterDeathClock);
 }
 
 
-DeathClock::DeathClock(double TimeOutFailureSeconds, const string &sErrorMessage, const string &sPathToClean, int uSecSleep) :
+DeathClock::DeathClock(double TimeOutFailureSeconds, const string &sErrorMessage, int uSecSleep) :
     m_uSecSleep(uSecSleep),
-    m_ContinueCountDown(1),
     m_sErrorMessage(sErrorMessage)
 {
-    asyncDeathClock(TimeOutFailureSeconds,sErrorMessage,uSecSleep,m_ContinueCountDown,sPathToClean);
+    m_ID = DEATH_CLOCK_ID++;    
+    DEATH_CLOCK_MAP[m_ID] = 1;
+    asyncDeathClock(TimeOutFailureSeconds,sErrorMessage,m_ID,uSecSleep);
 }
 
 DeathClock::~DeathClock() 
 {
     stopDeathClock();
 }
+
+void DeathClock::stopDeathClock() 
+{ 
+    DEATH_CLOCK_MAP[m_ID] = 0;
+};

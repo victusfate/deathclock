@@ -11,11 +11,10 @@ int main(int argc, char *argv[])
         exit(1);
     }
 
-    string cleanupPath(""); // nothing to cleanup
-    DeathClock aDeathClock(10, "sample main function 1", cleanupPath);
-    DeathClock bDeathClock(10, "sample main function 2", cleanupPath);
-    DeathClock cDeathClock(10, "sample main function 3", cleanupPath);
-    usleep(11000000); // sleep for 11sec, explosions!
+    DeathClock aDeathClock(1.2, "sample main function 1");
+    DeathClock bDeathClock(1.1, "sample main function 2");
+    DeathClock cDeathClock(1, "sample main function 3");
+    usleep(2000000); // sleep for 2sec, sample main function 3 explosions!
     cout << "never get here" << endl;
     return 0;
 }

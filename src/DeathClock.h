@@ -6,11 +6,12 @@
 #include <string>
 #include <sstream>
 #include <assert.h>
+#include <tr1/unordered_map>
 
 #include <uv.h>
 
 using namespace std;
-
+using namespace std::tr1;
 
 #define BEGIN_ASYNC(_data, async, after) \
     uv_work_t *_req = new uv_work_t; \
@@ -21,32 +22,23 @@ using namespace std;
 #define RETURN_ASYNC_AFTER delete req;
 
 struct DeathClockData {
-    DeathClockData(int &bContinueCountDown) : m_ContinueCountDown(bContinueCountDown) {
-        // cout << "DeathClockData took in a reference to an int continue count down " << bContinueCountDown << " ";
-        // cout << m_ContinueCountDown << " pointer " << (void *)&m_ContinueCountDown << endl;
-    };
+    DeathClockData() { };
 
     unsigned long   m_Counter;
     unsigned long   m_NMaxChecks;
     int             m_uSecSleep;
     string          m_sErrorMessage;
-    string          m_sPathToClean;
-    int            &m_ContinueCountDown;
+    unsigned int    m_clockID;
 };
 
 class DeathClock {
 public:
-    DeathClock(double TimeOutFailureSeconds, const string &sErrorMessage, const string &sPathToClean, int uSecSleep = 10000);
+    DeathClock(double TimeOutFailureSeconds, const string &sErrorMessage, int uSecSleep = 10000);
     ~DeathClock();
-    void stopDeathClock() { 
-        // cout << "setting continue countdown to zero for " << m_sErrorMessage << " ptr " << (void *)&m_ContinueCountDown << endl;
-        if (m_ContinueCountDown) m_ContinueCountDown = 0; 
-        usleep(m_uSecSleep); // wait for monitor thread to wake up and perceive continue count down, then shut itself down
-        // cout << "                 countdown              " << m_ContinueCountDown << endl;
-    };
+    void stopDeathClock();
 
+    unsigned int m_ID; 
     int m_uSecSleep;
-    int m_ContinueCountDown;
     string m_sErrorMessage;
 };
 
